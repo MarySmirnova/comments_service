@@ -53,7 +53,7 @@ func (m *Moderator) Start(ctx context.Context) error {
 		wg.Wait()
 
 		if err := m.db.UpdateModeratedComments(comms); err != nil {
-			//			log.WithError(err).Error("ailed to update moderated comments in the database")
+			//			log.WithError(err).Error("failed to update moderated comments in the database")
 			continue
 		}
 
