@@ -34,8 +34,6 @@ func (s *Server) NewCommentHandler(w http.ResponseWriter, r *http.Request) {
 	comment.NewsID = newsID
 	comment.ParentID = parentID
 	comment.PubTime = time.Now().Unix()
-	comment.Moderated = false
-	comment.Banned = false
 
 	if err := s.db.NewComment(comment); err != nil {
 		s.internalError(w, err)

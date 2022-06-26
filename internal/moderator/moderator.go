@@ -3,7 +3,6 @@ package moderator
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/MarySmirnova/comments_service/internal/config"
@@ -12,7 +11,7 @@ import (
 
 type Storage interface {
 	GetUnmoderatedComments() ([]*database.Comment, error)
-	UpdateModeratedComments([]*database.Comment) error
+	UpdateModeratedComments([]ModerationStatus) error
 }
 
 type Moderator struct {
@@ -35,24 +34,36 @@ func New(cfg config.Moderator, db Storage) *Moderator {
 	}
 }
 
+type ModerationStatus struct {
+	comment *database.Comment
+	blocked bool
+}
+
 func (m *Moderator) Start(ctx context.Context) error {
+	var chanStatus = make(chan ModerationStatus)
+
 	for {
+		var moderated []ModerationStatus
+
 		comms, err := m.db.GetUnmoderatedComments()
 		if err != nil {
 			//			log.WithError(err).Error("failed to get unmoderated comments from the database")
 			continue
 		}
 
-		wg := sync.WaitGroup{}
-
 		for _, comm := range comms {
-			wg.Add(1)
-			go m.Check(comm, &wg)
+			go m.Check(comm, chanStatus)
 		}
 
-		wg.Wait()
+		checkCount := len(comms)
+		for checkCount > 0 {
+			select {
+			case comm := <-chanStatus:
+				moderated = append(moderated, comm)
+			}
+		}
 
-		if err := m.db.UpdateModeratedComments(comms); err != nil {
+		if err := m.db.UpdateModeratedComments(moderated); err != nil {
 			//			log.WithError(err).Error("failed to update moderated comments in the database")
 			continue
 		}
@@ -65,18 +76,20 @@ func (m *Moderator) Start(ctx context.Context) error {
 	}
 }
 
-func (m *Moderator) Check(comm *database.Comment, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	comm.Banned = false
+func (m *Moderator) Check(comm *database.Comment, chanStatus chan<- ModerationStatus) {
+	status := ModerationStatus{
+		comment: comm,
+		blocked: false,
+	}
 
 	words := strings.Fields(comm.Text)
 	for _, word := range words {
 		if _, ok := m.forbiddenWords[word]; ok {
-			comm.Banned = true
-			break
+			status.blocked = true
+			chanStatus <- status
+			return
 		}
 	}
 
-	comm.Moderated = true
+	chanStatus <- status
 }

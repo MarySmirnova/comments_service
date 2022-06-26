@@ -7,10 +7,9 @@ import (
 )
 
 type MemoryDB struct {
-	mu                   sync.RWMutex
-	comments             map[int][]*database.Comment
-	waitingForModeration []*database.Comment
-	lastID               int
+	mu       sync.RWMutex
+	comments map[int][]*database.Comment
+	lastID   int
 }
 
 func New() *MemoryDB {
@@ -29,7 +28,6 @@ func (db *MemoryDB) NewComment(comm *database.Comment) error {
 	comm.ID = db.lastID
 
 	db.comments[comm.NewsID] = append(db.comments[comm.NewsID], comm)
-	db.waitingForModeration = append(db.waitingForModeration, comm)
 
 	return nil
 }
@@ -44,18 +42,4 @@ func (db *MemoryDB) GetAllCommentsByNewsID(newsID int) ([]*database.Comment, err
 	}
 
 	return comms, nil
-}
-
-func (db *MemoryDB) GetUnmoderatedComments() ([]*database.Comment, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	unmoderated := db.waitingForModeration
-	db.waitingForModeration = nil
-
-	return unmoderated, nil
-}
-
-func (db *MemoryDB) UpdateModeratedComments(comms []*database.Comment) error {
-	return nil
 }
