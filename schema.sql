@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS comments.posts (
     parent_id INT NOT NULL,
     news_id INT NOT NULL,
     text TEXT NOT NULL,
-    pub_time BIGINT NOT NULL CHECK (pubTime > 0)
-)
+    pub_time BIGINT NOT NULL CHECK (pub_time > 0)
+);

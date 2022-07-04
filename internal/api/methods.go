@@ -40,6 +40,7 @@ func (s *Server) NewCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Add("Code", strconv.Itoa(http.StatusNoContent))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -60,7 +61,7 @@ func (s *Server) AllCommentsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Add("Code", strconv.Itoa(http.StatusOK))
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(comments)
 }
