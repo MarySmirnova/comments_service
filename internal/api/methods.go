@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -27,6 +28,8 @@ func (s *Server) NewCommentHandler(w http.ResponseWriter, r *http.Request) {
 	var comment *database.Comment
 
 	if err := json.NewDecoder(r.Body).Decode(&comment); err != nil {
+		body, _ := ioutil.ReadAll(r.Body)
+		fmt.Println(string(body))
 		s.writeResponseError(w, fmt.Errorf("wrong JSON: %s", err), http.StatusBadRequest)
 		return
 	}
